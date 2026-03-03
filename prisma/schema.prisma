@@ -1,0 +1,191 @@
+// Prisma Schema for Rheumatology Prior Auth SaaS
+// This defines all database tables and their relationships
+
+generator client {
+  provider = "prisma-client-js"
+
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+// ================================
+// 1. USER TABLE
+// ================================
+// Stores user accounts for authentication
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+
+  // Relations: One user can create many PA requests
+  priorAuthRequests PriorAuthRequest[]
+  paOutcomeReports PAOutcomeReport[] 
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+
+  @@index([email])
+}
+
+// ================================
+// 2. MEDICATION TABLE
+// ================================
+// Reference table of rheumatology medications
+model Medication {
+  id         String   @id @default(cuid())
+  genericName String
+  brandName   String?
+  category    String   // BIOLOGIC, DMARD, JAK_INHIBITOR, etc.
+
+  // Relations
+  priorAuthRequests PriorAuthRequest[]
+  paOutcomeReports  PAOutcomeReport[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([genericName])
+  @@index([category])
+}
+
+// ================================
+// 3. INSURANCE PLAN TABLE
+// ================================
+// Reference table of insurance payers
+model InsurancePlan {
+  id        String   @id @default(cuid())
+  payerName String   // e.g., "Aetna", "UnitedHealthcare", "Medicare"
+  planType  String   // COMMERCIAL, MEDICARE, MEDICAID
+
+  // Relations
+  guidelineRules    GuidelineRule[]
+  priorAuthRequests PriorAuthRequest[]
+  paOutcomeReports PAOutcomeReport[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([payerName])
+}
+
+// ================================
+// 4. GUIDELINE RULE TABLE (THE CORE)
+// ================================
+// Stores requirements checklist + forms for each medication + insurance combo
+model GuidelineRule {
+  id String @id @default(cuid())
+
+  // Foreign keys
+  drugClassName String
+
+  insuranceId String
+  insurance   InsurancePlan @relation(fields: [insuranceId], references: [id], onDelete: Cascade)
+
+  //Type of PA request
+  requestType   String?
+
+  // Base requirements - always needed for this combo
+  baseRequirements Json // Array of strings: ["PA form", "Prescription", ...]
+
+  // Conditional rules - added based on user answers
+  conditionalRules Json // Array of {question, options, ifAnswer, addRequirements}
+
+  // Forms and portal
+  formLinks      Json    // Array of {name: string, url: string}
+  portalUrl      String? // Direct link to insurance submission portal
+  portalNotes    String? // e.g., "Fax preferred, portal is unreliable"
+
+  // Extra value fields
+  commonDenials  Json?   // Array of strings: ["Missing DMARD trial docs", ...]
+  proTips        String? // Helpful submission tips
+  expectedDays   Int?    // Typical response time in business days
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Ensure one guideline per medication + insurance combination
+  @@unique([drugClassName, insuranceId, requestType])
+  @@index([drugClassName])
+  @@index([insuranceId])
+}
+
+// ================================
+// 5. PRIOR AUTH REQUEST TABLE
+// ================================
+// Stores each PA lookup with patient info and status tracking
+model PriorAuthRequest {
+  id              String   @id @default(cuid())
+  referenceNumber String   @unique // Auto-generated: PA-2024-0001
+
+  // Foreign key to user who created this
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Foreign keys to medication and insurance
+  medicationId String
+  medication   Medication @relation(fields: [medicationId], references: [id])
+
+  insuranceId String
+  insurance   InsurancePlan @relation(fields: [insuranceId], references: [id])
+
+  // Patient info (NOT normalized - just stored with each request)
+  patientName     String
+  patientDOB      DateTime
+  patientMemberId String?
+
+  // User's answers to conditional questions
+  userAnswers Json? // {question: answer, question: answer, ...}
+
+  // Snapshot of generated checklist and forms (JSON)
+  checklistSteps Json
+  formLinks      Json
+
+  // Status tracking
+  status String // DRAFT, SUBMITTED, APPROVED, DENIED, CANCELLED
+
+  // Important dates
+  createdAt    DateTime  @default(now())
+  submittedAt  DateTime?
+  decisionDate DateTime?
+
+  // Optional notes field
+  notes String?
+
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([referenceNumber])
+  @@index([createdAt])
+}
+
+// ================================
+// 6. PA OUTCOME REPORT TABLE (CROWDSOURCED)
+// ================================
+model PAOutcomeReport {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  medicationId String
+  medication   Medication @relation(fields: [medicationId], references: [id])
+
+  insuranceId String
+  insurance   InsurancePlan @relation(fields: [insuranceId], references: [id])
+
+  indication   String?  // e.g. "RA", "PsA", "AS", "SLE"
+  requestType  String?  // "initial" or "appeal"
+  outcome      String   // "approved" or "denied"
+  notes        String?  // free-text: what happened
+
+  submittedAt DateTime @default(now())
+
+  @@index([medicationId, insuranceId])
+  @@index([insuranceId])
+}
