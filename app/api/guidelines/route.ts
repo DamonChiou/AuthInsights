@@ -38,7 +38,6 @@ export async function GET() {
     try {
         const guidelines = await prisma.guidelineRule.findMany({
             include: {
-                medication: { select: { genericName: true } },
                 insurance: { select: { payerName: true } },
             },
             orderBy: { createdAt: "desc" },
