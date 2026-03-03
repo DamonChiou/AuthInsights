@@ -13,11 +13,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-icons: { icon: "/favicon.ico" }
+
 
 export const metadata: Metadata = {
   title: "AuthInsights",
   description: "Community-sourced prior auth outcome data for rheumatology practices.",
+  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({

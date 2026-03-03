@@ -74,7 +74,7 @@ export default function Home() {
                                 <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
                                 <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                                 <div className="flex-1 ml-3 bg-white rounded px-3 py-1 text-xs text-slate-400 font-mono">
-                                    authinsights.com/dashboard/biosimilar-lookup
+                                    authinsights.app/dashboard/biosimilar-lookup
                                 </div>
                             </div>
                             {/* Screenshot — drop your image at public/screenshot-lookup.png */}
