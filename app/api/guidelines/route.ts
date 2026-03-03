@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
         const guideline = await prisma.guidelineRule.create({
             data: {
-                medicationId: validatedData.medicationId,
+                drugClassName: validatedData.medicationId,
                 insuranceId: validatedData.insuranceId,
                 requestType: validatedData.requestType,
                 baseRequirements: validatedData.baseRequirements,
