@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AuthInsights
 
-## Getting Started
+Community-sourced prior authorization outcome data for rheumatology practices. See real approval rates by drug, biosimilar, and insurance plan — before you submit.
 
-First, run the development server:
+## What it does
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Biosimilar lookup** — compare approval rates across Humira, Hadlima, Cyltezo, and other adalimumab biosimilars by payer
+- **PA outcome reporting** — submit your own prior auth results to contribute to the dataset
+- **Guideline rules** — admin-managed PA requirements and checklists per drug class and insurance plan
+- **Appeals tracking** — separate data for initial PAs vs. appeals
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- [Next.js 15](https://nextjs.org) (App Router)
+- [Prisma](https://www.prisma.io) + PostgreSQL (Supabase)
+- [NextAuth.js v5](https://authjs.dev) (credentials-based auth with JWT sessions)
+- Tailwind CSS
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local setup
 
-## Learn More
+1. **Clone and install**
+   ```bash
+   git clone https://github.com/DamonChiou/rheumatology-saas.git
+   cd rheumatology-saas
+   npm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Fill in your values in `.env`:
+   - `DATABASE_URL` — PostgreSQL connection string (Supabase connection pooling URL recommended)
+   - `NEXTAUTH_SECRET` — generate one with `openssl rand -base64 32`
+   - `NEXTAUTH_URL` — `http://localhost:3000` for local dev
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Run database migrations and seed**
+   ```bash
+   npx prisma migrate dev
+   npx prisma db seed
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **Start the dev server**
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000).
 
-## Deploy on Vercel
+## Database schema
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Table | Description |
+|---|---|
+| `User` | Practice accounts |
+| `Medication` | Drug reference table (generic + brand names) |
+| `InsurancePlan` | Payer reference table |
+| `GuidelineRule` | PA requirements per drug class + insurance combo |
+| `PAOutcomeReport` | Crowdsourced approval/denial outcomes |
+| `PriorAuthRequest` | Individual PA lookups with checklist snapshots |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+
+- No patient identifiers are stored in outcome reports — only drug, insurance, indication, and result.
+- The seed script (`prisma/seed.ts`) populates realistic synthetic outcome data for development.
