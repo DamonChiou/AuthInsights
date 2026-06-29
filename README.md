@@ -1,4 +1,4 @@
-# AuthInsights
+# AuthInsights | https://www.authinsights.app/
 
 Community-sourced prior authorization outcome data for rheumatology practices. See real approval rates by drug, biosimilar, and insurance plan — before you submit.
 
