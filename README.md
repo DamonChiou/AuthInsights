@@ -1,4 +1,4 @@
-[AuthInsights](https://www.authinsights.app/)
+# [AuthInsights](https://www.authinsights.app/)
 
 ## What it does
 
